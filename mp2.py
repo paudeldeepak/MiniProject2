@@ -45,7 +45,7 @@ def signUpNewUser():
 def signinscreen():
     print("1.Login\n2.Register")
     userSignInChoice = input()
-    # Handle singin in
+    # Handle singin in fixed
     if userSignInChoice == "1":
         # While loop to keep looping until correct user and password entered
         while True:
