@@ -22,8 +22,14 @@ def connect(path):
     connection.commit()
     return connection, cursor
 
+<<<<<<< HEAD
 def attemptSignIn(user,pwd):
     print(user+pwd)
+=======
+def attemptSignIn(user, pwd):
+    print(user + pwd)
+    return 0
+>>>>>>> redemption
 
 def signUpNewUser():
     path = "miniproj2.db"
@@ -41,9 +47,13 @@ def signinscreen():
     print("1.Login\n2.Register")
     userSignInChoice = input()
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
     # Handle singin in fixed
 >>>>>>> redeption
+=======
+    # Handle singin in fixed
+>>>>>>> redemption
     if userSignInChoice == "1":
         #While loop to keep looping until correct user and password entered
         while(True):
@@ -60,3 +70,5 @@ if __name__ == '__main__':
     conn = sqlite3.connect('./project.db')
     connect(path)
     signinscreen()
+
+#fixed
