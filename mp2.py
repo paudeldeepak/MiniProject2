@@ -6,6 +6,13 @@ import time
 import hashlib
 import logging
 
+def setupDatabase(path="miniproj2.db"):
+    print(path)
+    print("created database at path:", path)
+    connect(path)
+    connection.close()
+
+
 def connect(path):
     global connection, cursor
     connection = sqlite3.connect(path)
@@ -17,6 +24,18 @@ def connect(path):
 
 def attemptSignIn(user,pwd):
     print(user+pwd)
+
+def signUpNewUser():
+    path = "miniproj2.db"
+    global connection, cursor
+    connection = sqlite3.connect(path)
+    cursor = connection.cursor()
+    newUserName = input("Enter your name")
+    newUserID = input("Enter your desired ID")
+    newUserPassword = input("Enter desired password")
+    cursor.execute("INSERT INTO CUSTOMERS VALUES (?, ?, ?)",(newUserID,newUserName,newUserPassword))
+    connection.commit()
+
 
 def signinscreen():
     print("1.Login\n2.Register")
