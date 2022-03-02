@@ -6,8 +6,7 @@ import time
 import hashlib
 import logging
 
-
-def setupdatabase(path="miniproj2.db"):
+def setupDatabase(path="miniproj2.db"):
     print(path)
     print("created database at path:", path)
     connect(path)
@@ -23,11 +22,9 @@ def connect(path):
     connection.commit()
     return connection, cursor
 
-
 def attemptSignIn(user, pwd):
     print(user + pwd)
     return 0
-
 
 def signUpNewUser():
     path = "miniproj2.db"
@@ -45,24 +42,22 @@ def signUpNewUser():
 def signinscreen():
     print("1.Login\n2.Register")
     userSignInChoice = input()
-    # Handle singin in
+    # Handle singin in fixed
     if userSignInChoice == "1":
-        # While loop to keep looping until correct user and password entered
-        while True:
-            signInUserName = input("Enter Id: ")
+        #While loop to keep looping until correct user and password entered
+        while(True):
+            signInUserName  = input("Enter Id: ")
             signInPassword = input("Enter password: ")
-            signInResult = attemptSignIn(signInUserName, signInPassword)
-            if signInResult == 0:
+            signInResult = attemptSignIn(signInUserName,signInPassword)
+            if(signInResult == 0):
                 break
             else:
                 print("Incorrect information, please try again! ")
-    elif userSignInChoice == "2":
-        signUpNewUser()
 
 
 if __name__ == '__main__':
-    if (path.exists("miniproj2.db")):
-        logging.info("Database already exists")
-    else:
-        setupdatabase()
+    conn = sqlite3.connect('./project.db')
+    connect(path)
     signinscreen()
+
+#fixed
