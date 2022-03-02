@@ -173,7 +173,7 @@ def signUpNewUser():
     connection.commit()
 
 def main():
-    path = './project.db'
+    path = './miniproj2.db'
     connect(path)
     drop_tables()
     define_tables()
