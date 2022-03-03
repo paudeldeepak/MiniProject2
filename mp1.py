@@ -191,7 +191,7 @@ def signUpNewUser():
 
 def startSession(cid):
     global connection, cursor
-
+    print("running")
     cursor.execute("SELECT sid FROM sessions")
     row=cursor.fetchall()
     
@@ -218,10 +218,10 @@ def main():
         drop_tables()
         define_tables()
 
-    #signinscreen()
+     # RoleToAcess: 1 = customer , 2=editors, 0 = error
     (id,roleToAccess) = signinscreen()
     startSession(id)
-    # RoleToAcess: 1 = customer , 2=editors, 0 = error
+   
     
 
 main()
