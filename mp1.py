@@ -1,4 +1,5 @@
 import sqlite3
+from unittest.mock import NonCallableMagicMock
 
 def connect(path):
     global connection, cursor
@@ -150,17 +151,29 @@ def signinscreen():
             signInUserName = input("Enter Id: ")
             signInPassword = input("Enter password: ")
             signInResult = attemptSignIn(signInUserName, signInPassword)
-            if signInResult == 0:
-                break
-            else:
+            # Return 1 = customer , 2=editors, 0 = error
+            if signInResult == 1:
+                return (signInUserName,1)
+            elif signInResult == 2:
+                return (signInUserName,2)
+            elif signInResult == 0:
                 print("Incorrect information, please try again! ")
     elif userSignInChoice == "2":
-        signUpNewUser()
+        return (signUpNewUser(),1)
 
 def attemptSignIn(user, pwd):
     global connection, cursor
+    # Check if user exists in customers
     cursor.execute("SELECT name from customers WHERE cid=? AND pwd = ?;",(user,pwd))
-    print(cursor.fetchone()[0])
+    exist = cursor.fetchone()
+    if exist is not None:
+        return 1
+    # Check if user exists in editors
+    cursor.execute("SELECT eid from editors WHERE eid=? AND pwd = ?;",(user,pwd))
+    exist = cursor.fetchone()
+    if exist is not None:
+        return 2
+    
     return 0
 
 def signUpNewUser():
@@ -170,11 +183,14 @@ def signUpNewUser():
     newUserPassword = input("Enter desired password: ")
     cursor.execute("INSERT INTO customers VALUES (?, ?, ?)",(newUserID,newUserName,newUserPassword))
     connection.commit()
+    return newUserID
 
 def main():
     
     path = './miniproj2.db'
     connect(path)
-    signinscreen()
+    # RoleToAcess: 1 = customer , 2=editors, 0 = error
+    (id,roleToAccess) = signinscreen()
+    
 
 main()
