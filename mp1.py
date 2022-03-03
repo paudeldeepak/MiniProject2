@@ -227,16 +227,24 @@ def searchMovies():
     movie_list = []
 
     for keywords in keywords_list:
-        cursor.execute('''SELECT m.title, m.year, m.runtime, group_concat(DISTINCT c.role)
-                          FROM movies m, casts c 
+        cursor.execute('''SELECT m.title, m.year, m.runtime, group_concat(DISTINCT c.role), s.watch_count
+                          FROM movies m, casts c JOIN (SELECT w.mid as movid, COUNT(DISTINCT w.cid) as watch_count
+                          FROM movies m, watch w
+                          WHERE m.mid = w.mid
+                          AND w.duration*100/m.runtime > 49
+                          GROUP BY w.mid) s ON m.mid = s.movid
                           WHERE m.mid = c.mid 
                           AND LOWER(m.title) LIKE ?
                           GROUP BY m.title''', ('%'+keywords+'%' ,))
         q1 = cursor.fetchall()
         if q1[0][0] != None:
             movie_list.extend(q1)
-        cursor.execute('''SELECT m.title, m.year, m.runtime, group_concat(DISTINCT c2.role)
-                          FROM movies m, casts c1, casts c2 
+        cursor.execute('''SELECT m.title, m.year, m.runtime, group_concat(DISTINCT c2.role), s.watch_count
+                          FROM movies m, casts c1, casts c2 JOIN (SELECT w.mid as movid, COUNT(DISTINCT w.cid) as watch_count
+                          FROM movies m, watch w
+                          WHERE m.mid = w.mid
+                          AND w.duration*100/m.runtime > 49
+                          GROUP BY w.mid) s ON m.mid = s.movid
                           WHERE m.mid = c1.mid 
                           AND m.mid = c2.mid
                           AND LOWER(c1.role) LIKE ?
@@ -244,8 +252,12 @@ def searchMovies():
         q2 = cursor.fetchall()
         if q2[0][0] != None:
             movie_list.extend(q2)
-        cursor.execute('''SELECT m.title, m.year, m.runtime, group_concat(DISTINCT c2.role) 
-                          FROM movies m, casts c1, casts c2, moviePeople p 
+        cursor.execute('''SELECT m.title, m.year, m.runtime, group_concat(DISTINCT c2.role), s.watch_count
+                          FROM movies m, casts c1, casts c2, moviePeople p JOIN (SELECT w.mid as movid, COUNT(DISTINCT w.cid) as watch_count
+                          FROM movies m, watch w
+                          WHERE m.mid = w.mid
+                          AND w.duration*100/m.runtime > 49
+                          GROUP BY w.mid) s ON m.mid = s.movid
                           WHERE m.mid = c1.mid
                           AND m.mid = c2.mid 
                           AND c1.pid = p.pid 
@@ -278,7 +290,10 @@ def searchMovies():
             threshold += 5
             print()
         elif (int(choice) > 0 and int(choice) <= len(movie_counter)):
-            print('CHOSEN MOVIE IS:', list(movie_counter.keys())[0][0])
+            int_choice = int(choice) - 1
+            print('\n'+list(movie_counter.keys())[int_choice][0]+'. Cast:', list(movie_counter.keys())[int_choice][3],' Cast:', list(movie_counter.keys())[int_choice][4])
+        elif (choice == '-'):
+            break
 
 def onExit():
     global connection, cursor
