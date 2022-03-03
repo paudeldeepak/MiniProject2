@@ -1,3 +1,4 @@
+from ast import keyword
 from asyncio.windows_events import NULL
 import sqlite3
 import random
@@ -193,13 +194,17 @@ def startSession(cid):
     global connection, cursor
     
     cursor.execute("SELECT sid FROM sessions")
-    row=cursor.fetchall()
-    
+    row = cursor.fetchall()
     sid = random.randint(0,9999)
 
+    new_sid_list = []
+
     if (row != NULL):
-        while sid in row:
-            sid = random.randint(0,9999)
+        for i in range(0, len(row)):
+            new_sid_list.append(row[i][0])
+
+    while sid in new_sid_list:
+        sid = random.randint(0,1000)
 
     sdate = date.today()
 
@@ -208,6 +213,22 @@ def startSession(cid):
     connection.commit()
     return 
 
+def searchMovies():
+    global connection, cursor
+
+    keywords = input("Enter a keyword to begin searching for a movie: ")
+    keywords = keywords.lower()
+    print(keywords)
+
+    cursor.execute("SELECT m.title, m.year, m.runtime FROM movies m WHERE LOWER(m.title) LIKE '%?%';", keywords)
+    row=cursor.fetchall()
+    print(row)
+
+def onExit():
+    global connection, cursor
+
+    connection.commit()
+    connection.close()
 
 def main():
     
@@ -219,13 +240,18 @@ def main():
         define_tables()
 
     #signinscreen()
-    (id,roleToAccess) = signinscreen()
+    #(id,roleToAccess) = signinscreen()
     # RoleToAcess: 1 = customer , 2=editors, 0 = error
+    id = 'c100'
+    roleToAccess = 1
     if(roleToAccess == 1):
-        startSession(id)
+        #startSession(id)
+        searchMovies()
     elif(roleToAccess == 2):
         # do somethiong
         # place holder v
         startSession(id)
+    
+    onExit()
 
 main()
