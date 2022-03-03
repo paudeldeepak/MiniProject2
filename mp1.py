@@ -191,7 +191,7 @@ def signUpNewUser():
 
 def startSession(cid):
     global connection, cursor
-    print("running")
+    
     cursor.execute("SELECT sid FROM sessions")
     row=cursor.fetchall()
     
@@ -220,8 +220,12 @@ def main():
 
      # RoleToAcess: 1 = customer , 2=editors, 0 = error
     (id,roleToAccess) = signinscreen()
-    startSession(id)
-   
-    
+    # RoleToAcess: 1 = customer , 2=editors, 0 = error
+    if(roleToAccess == 1):
+        startSession(id)
+    elif(roleToAccess == 2):
+        # do somethiong
+        # place holder v
+        startSession(id)
 
 main()
