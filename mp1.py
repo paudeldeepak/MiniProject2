@@ -5,6 +5,7 @@ import random
 from datetime import date
 import os.path
 from unittest.mock import NonCallableMagicMock
+from collections import Counter
 
 def connect(path):
     global connection, cursor
@@ -216,13 +217,68 @@ def startSession(cid):
 def searchMovies():
     global connection, cursor
 
-    keywords = input("Enter a keyword to begin searching for a movie: ")
-    keywords = keywords.lower()
-    print(keywords)
+    keyw = input("Enter a keyword or multiple keywords seperated by a comma to begin searching for a movie: ")
+    print()
+    keyw = keyw.lower()
+    keywords_list = list(keyw.split(","))
+    for i in range(0, len(keywords_list)):
+        keywords_list[i] = keywords_list[i].strip()
 
-    cursor.execute("SELECT m.title, m.year, m.runtime FROM movies m WHERE LOWER(m.title) LIKE '%?%';", keywords)
-    row=cursor.fetchall()
-    print(row)
+    movie_list = []
+
+    for keywords in keywords_list:
+        cursor.execute('''SELECT m.title, m.year, m.runtime, group_concat(DISTINCT c.role)
+                          FROM movies m, casts c 
+                          WHERE m.mid = c.mid 
+                          AND LOWER(m.title) LIKE ?
+                          GROUP BY m.title''', ('%'+keywords+'%' ,))
+        q1 = cursor.fetchall()
+        if q1[0][0] != None:
+            movie_list.extend(q1)
+        cursor.execute('''SELECT m.title, m.year, m.runtime, group_concat(DISTINCT c2.role)
+                          FROM movies m, casts c1, casts c2 
+                          WHERE m.mid = c1.mid 
+                          AND m.mid = c2.mid
+                          AND LOWER(c1.role) LIKE ?
+                          GROUP BY m.title''', ('%'+keywords+'%' ,))
+        q2 = cursor.fetchall()
+        if q2[0][0] != None:
+            movie_list.extend(q2)
+        cursor.execute('''SELECT m.title, m.year, m.runtime, group_concat(DISTINCT c2.role) 
+                          FROM movies m, casts c1, casts c2, moviePeople p 
+                          WHERE m.mid = c1.mid
+                          AND m.mid = c2.mid 
+                          AND c1.pid = p.pid 
+                          AND LOWER(p.name) LIKE ?
+                          GROUP BY m.title''', ('%'+keywords+'%' ,))
+        q3 = cursor.fetchall()
+        if q3[0][0] != None:
+            movie_list.extend(q3)
+    
+    print(movie_list)
+    movie_counter = (Counter(movie_list))
+
+    print(movie_counter)
+
+    count = 0
+    threshold = 5
+    choice = ''
+    while choice != '-':
+        for movies in movie_counter:
+            if count == threshold:
+                if len(movie_counter) > threshold:
+                    print("\nTo see more matches type '+'.", end = ' ')
+                break
+            elif (count < threshold and count > (threshold-6)) :
+                print(str(count+1) + ".", movies[0],"  Year:",movies[1],"  Duration:",str(movies[2])+" minutes")
+            count += 1
+        choice = input("\nTo exit type '-'. Otherwise type the number besides the movie to see more information: ")
+        if choice == '+':
+            count = 0
+            threshold += 5
+            print()
+        elif (int(choice) > 0 and int(choice) <= len(movie_counter)):
+            print('CHOSEN MOVIE IS:', list(movie_counter.keys())[0][0])
 
 def onExit():
     global connection, cursor
