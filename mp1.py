@@ -3,6 +3,7 @@ import sqlite3
 import random
 from datetime import date
 import os.path
+from syslog import LOG_WARNING
 from unittest.mock import NonCallableMagicMock
 
 def connect(path):
@@ -196,9 +197,10 @@ def startSession(cid):
     row=cursor.fetchall()
     
     sid = random.randint(0,9999)
-
+    
     if (row != NULL):
         while sid in row:
+            
             sid = random.randint(0,9999)
 
     sdate = date.today()
@@ -208,6 +210,49 @@ def startSession(cid):
     connection.commit()
     return 
 
+def addMovie():
+    global connection, cursor
+    movieID = input("Provide Movie ID: ")
+    movieTitle = input("Provide Movie title: ")
+    movieYear = input("Provide Movie year: ")
+    movieRuntime = input("Provide Movie Runtime: ")
+    cursor.execute("INSERT INTO movies VALUES (?, ?, ?, ?)",(movieID,movieTitle,movieYear,movieRuntime))
+    
+    print("We will now add Cast Members! (Enter D to finish, C for new cast member)")
+    while True:
+        userActionID = input("Enter ID of member to look up! (D to finish): ")
+        if(userActionID.lower() == "d"):
+            print("Thank you for adding actors!")
+            break
+        else:
+            cursor.execute("SELECT name,birthYear from moviePeople WHERE pid=?;",(userActionID,))
+            exist = cursor.fetchone()
+            # If actor exists 
+            if exist is not None:
+                print("Name of actor is" , exist[0] , "and birth year is" , exist[1])
+                actorChoice = input("Give a role or Type R to reject actor: ")
+                if(actorChoice.lower != "r"):
+                    cursor.execute("INSERT INTO casts VALUES (?, ?, ?)",(movieID,userActionID,actorChoice))
+            #If actor doesnt exist
+            else:
+                choiceAddNew = input("Not in database! Would you like to add this ID as a new actor? (Y,N) ")
+                if choiceAddNew.lower()=="y":
+                    newActName = input("Please provide this actor a name: ")
+                    newActYear = input("Please provide this actor a birthyear: ")
+                    cursor.execute("INSERT INTO moviePeople VALUES (?, ?, ?)",(userActionID,newActName,newActYear))
+    connection.commit()
+
+
+def updateReccomendation():
+    usrChoice = input("Do you want a Monthly(M), Annual(A) or All-time(AT) report?: ")
+    if usrChoice.lower()=="m":
+        pass
+    elif usrChoice.lower=="a":
+        pass
+    elif usrChoice.lower=="at":
+        pass
+    else:
+        updateReccomendation()
 
 def main():
     
@@ -220,12 +265,14 @@ def main():
 
      # RoleToAcess: 1 = customer , 2=editors, 0 = error
     (id,roleToAccess) = signinscreen()
+    
     # RoleToAcess: 1 = customer , 2=editors, 0 = error
     if(roleToAccess == 1):
         startSession(id)
     elif(roleToAccess == 2):
-        # do somethiong
+        #addMovie()
         # place holder v
-        startSession(id)
+        
+    connection.close()
 
 main()
