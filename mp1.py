@@ -1,6 +1,8 @@
+from asyncio.windows_events import NULL
 import sqlite3
-
-from attr import define
+import random
+from datetime import date
+import os.path
 
 def connect(path):
     global connection, cursor
@@ -156,8 +158,10 @@ def signinscreen():
                 break
             else:
                 print("Incorrect information, please try again! ")
+        signInUserName
     elif userSignInChoice == "2":
         signUpNewUser()
+    return
 
 def attemptSignIn(user, pwd):
     print(user + pwd)
@@ -171,13 +175,37 @@ def signUpNewUser():
     newUserPassword = input("Enter desired password: ")
     cursor.execute("INSERT INTO customers VALUES (?, ?, ?)",(newUserID,newUserName,newUserPassword))
     connection.commit()
+    return 
+
+def startSession(cid):
+    global connection, cursor
+
+    cursor.execute("SELECT sid FROM sessions")
+    row=cursor.fetchall()
+    
+    sid = random.randint(0,9999)
+
+    if (row != NULL):
+        while sid in row:
+            sid = random.randint(0,9999)
+
+    sdate = date.today()
+
+    duration = NULL
+    cursor.execute("INSERT INTO sessions VALUES (?, ?, ?, ?)",(sid,cid,sdate,duration))
+    connection.commit()
+    return 
 
 def main():
     path = './miniproj2.db'
     connect(path)
-    drop_tables()
-    define_tables()
 
-    signinscreen()
+    if(not os.path.exists('./miniproj2.db')):
+        drop_tables()
+        define_tables()
+
+    #signinscreen()
+    cid = 454
+    startSession(cid)
 
 main()
