@@ -3,6 +3,7 @@ import sqlite3
 import random
 from datetime import date
 import os.path
+from unittest.mock import NonCallableMagicMock
 
 def connect(path):
     global connection, cursor
@@ -154,28 +155,39 @@ def signinscreen():
             signInUserName = input("Enter Id: ")
             signInPassword = input("Enter password: ")
             signInResult = attemptSignIn(signInUserName, signInPassword)
-            if signInResult == 0:
-                break
-            else:
+            # Return 1 = customer , 2=editors, 0 = error
+            if signInResult == 1:
+                return (signInUserName,1)
+            elif signInResult == 2:
+                return (signInUserName,2)
+            elif signInResult == 0:
                 print("Incorrect information, please try again! ")
-        signInUserName
     elif userSignInChoice == "2":
-        signUpNewUser()
-    return
+        return (signUpNewUser(),1)
 
 def attemptSignIn(user, pwd):
-    print(user + pwd)
-    return 0 
+    global connection, cursor
+    # Check if user exists in customers
+    cursor.execute("SELECT name from customers WHERE cid=? AND pwd = ?;",(user,pwd))
+    exist = cursor.fetchone()
+    if exist is not None:
+        return 1
+    # Check if user exists in editors
+    cursor.execute("SELECT eid from editors WHERE eid=? AND pwd = ?;",(user,pwd))
+    exist = cursor.fetchone()
+    if exist is not None:
+        return 2
+    
+    return 0
 
 def signUpNewUser():
     global connection, cursor
-
     newUserName = input("Enter your name: ")
     newUserID = input("Enter your desired ID: ")
     newUserPassword = input("Enter desired password: ")
     cursor.execute("INSERT INTO customers VALUES (?, ?, ?)",(newUserID,newUserName,newUserPassword))
     connection.commit()
-    return 
+    return newUserID
 
 def startSession(cid):
     global connection, cursor
@@ -196,7 +208,9 @@ def startSession(cid):
     connection.commit()
     return 
 
+
 def main():
+    
     path = './miniproj2.db'
     connect(path)
 
@@ -205,7 +219,9 @@ def main():
         define_tables()
 
     #signinscreen()
-    cid = 454
-    startSession(cid)
+    (id,roleToAccess) = signinscreen()
+    startSession(id)
+    # RoleToAcess: 1 = customer , 2=editors, 0 = error
+    
 
 main()
