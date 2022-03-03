@@ -1,7 +1,5 @@
 import sqlite3
 
-from attr import define
-
 def connect(path):
     global connection, cursor
 
@@ -160,12 +158,13 @@ def signinscreen():
         signUpNewUser()
 
 def attemptSignIn(user, pwd):
-    print(user + pwd)
-    return 0 
+    global connection, cursor
+    cursor.execute("SELECT name from customers WHERE cid=? AND pwd = ?;",(user,pwd))
+    print(cursor.fetchone()[0])
+    return 0
 
 def signUpNewUser():
     global connection, cursor
-
     newUserName = input("Enter your name: ")
     newUserID = input("Enter your desired ID: ")
     newUserPassword = input("Enter desired password: ")
@@ -173,11 +172,9 @@ def signUpNewUser():
     connection.commit()
 
 def main():
+    
     path = './miniproj2.db'
     connect(path)
-    drop_tables()
-    define_tables()
-
     signinscreen()
 
 main()
