@@ -16,135 +16,12 @@ def connect(path):
     connection.commit()
     return
 
-def drop_tables():
+def setupDB(databaseFile):
     global connection, cursor
-
-    drop_editor = "DROP TABLE IF EXISTS editors;"
-    drop_follows = "DROP TABLE IF EXISTS follows;"
-    drop_watch = "DROP TABLE IF EXISTS watch;"
-    drop_sessions = "DROP TABLE IF EXISTS sessions;"
-    drop_customers = "DROP TABLE IF EXISTS customers;"
-    drop_recommendations = "DROP TABLE IF EXISTS recommendations;"
-    drop_casts = "DROP TABLE IF EXISTS casts;"
-    drop_movies = "DROP TABLE IF EXISTS movies;"
-    drop_moviePeople = "DROP TABLE IF EXISTS moviePeople;"
-
-    cursor.execute(drop_editor)
-    cursor.execute(drop_follows)
-    cursor.execute(drop_watch)
-    cursor.execute(drop_sessions)
-    cursor.execute(drop_customers)
-    cursor.execute(drop_recommendations)
-    cursor.execute(drop_casts)
-    cursor.execute(drop_movies)
-    cursor.execute(drop_moviePeople)
-
-def define_tables():
-    global connection, cursor
-
-    moviePeople_query = '''
-                        create table moviePeople (
-                            pid		char(4),
-                            name		text,
-                            birthYear	int,
-                            primary key (pid)
-                        );
-                    '''
-
-    movies_query = '''
-                        create table movies (
-                            mid		int,
-                            title		text,
-                            year		int,
-                            runtime	int,
-                            primary key (mid)
-                        );
-                    '''
-
-    casts_query = '''
-                        create table casts (
-                            mid		int,
-                            pid		char(4),
-                            role		text,
-                            primary key (mid,pid),
-                            foreign key (mid) references movies,
-                            foreign key (pid) references moviePeople
-                        );
-                    '''
-
-    recommendations_query = '''
-                        create table recommendations (
-                            watched	int,
-                            recommended	int,
-                            score		float,
-                            primary key (watched,recommended),
-                            foreign key (watched) references movies,
-                            foreign key (recommended) references movies
-                        );
-                    '''
     
-    customers_query = '''
-                        create table customers (
-                            cid		char(4),
-                            name		text,
-                            pwd		text,
-                            primary key (cid)
-                        );
-                    '''
-
-    sessions_query = '''
-                        create table sessions (
-                            sid		int,
-                            cid		char(4),
-                            sdate		date,
-                            duration	int,
-                            primary key (sid,cid),
-                            foreign key (cid) references customers
-                                on delete cascade
-                        );
-                    '''
-
-    watch_query = '''
-                        create table watch (
-                            sid		int,
-                            cid		char(4),
-                            mid		int,
-                            duration	int,
-                            primary key (sid,cid,mid),
-                            foreign key (sid,cid) references sessions,
-                            foreign key (mid) references movies
-                        );
-                    '''
-
-    follows_query = '''
-                        create table follows (
-                            cid		char(4),
-                            pid		char(4),
-                            primary key (cid,pid),
-                            foreign key (cid) references customers,
-                            foreign key (pid) references moviePeople
-                        );
-                    '''
-
-    editors_query = '''
-                        create table editors (
-                            eid		char(4),
-                            pwd		text,
-                            primary key (eid)
-                        );
-                    '''
-
-    cursor.execute(moviePeople_query)
-    cursor.execute(movies_query)
-    cursor.execute(casts_query)
-    cursor.execute(recommendations_query)
-    cursor.execute(customers_query)
-    cursor.execute(sessions_query)
-    cursor.execute(watch_query)
-    cursor.execute(follows_query)
-    cursor.execute(editors_query)
+    with open(databaseFile) as fp:
+        cursor.executescript(fp.read())
     connection.commit()
-
     return
    
 def signinscreen():
@@ -304,19 +181,20 @@ def onExit():
 def main():
     
     path = './miniproj2.db'
-    connect(path)
+    databaseFile = './prj-tables.sql'
 
     if(not os.path.exists('./miniproj2.db')):
-        drop_tables()
-        define_tables()
+        connect(path)
+        setupDB(databaseFile)
+    else:
+        connect(path)
 
-    #signinscreen()
-    #(id,roleToAccess) = signinscreen()
+    signinscreen()
+    (id,roleToAccess) = signinscreen()
     # RoleToAcess: 1 = customer , 2=editors, 0 = error
-    id = 'c100'
-    roleToAccess = 1
+    
     if(roleToAccess == 1):
-        #startSession(id)
+        startSession(id)
         searchMovies()
     elif(roleToAccess == 2):
         # do somethiong
