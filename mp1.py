@@ -4,6 +4,7 @@ import sqlite3
 import random
 from datetime import date
 import os.path
+from tkinter import E
 from unittest.mock import NonCallableMagicMock
 from collections import Counter
 
@@ -91,7 +92,7 @@ def startSession(cid):
     connection.commit()
     return 
 
-def searchMovies():
+def searchMovies(cid, sid, duration):
     global connection, cursor
 
     keyw = input("Enter a keyword or multiple keywords seperated by a comma to begin searching for a movie: ")
@@ -104,7 +105,7 @@ def searchMovies():
     movie_list = []
 
     for keywords in keywords_list:
-        cursor.execute('''SELECT m.title, m.year, m.runtime, group_concat(DISTINCT c.role), s.watch_count
+        cursor.execute('''SELECT m.title, m.year, m.runtime, group_concat(DISTINCT c.role), group_concat(DISTINCT c.pid), s.watch_count, m.mid
                           FROM movies m, casts c JOIN (SELECT w.mid as movid, COUNT(DISTINCT w.cid) as watch_count
                           FROM movies m, watch w
                           WHERE m.mid = w.mid
@@ -113,10 +114,9 @@ def searchMovies():
                           WHERE m.mid = c.mid 
                           AND LOWER(m.title) LIKE ?
                           GROUP BY m.title''', ('%'+keywords+'%' ,))
-        q1 = cursor.fetchall()
-        if q1[0][0] != None:
-            movie_list.extend(q1)
-        cursor.execute('''SELECT m.title, m.year, m.runtime, group_concat(DISTINCT c2.role), s.watch_count
+        movie_list.extend(cursor.fetchall())
+
+        cursor.execute('''SELECT m.title, m.year, m.runtime, group_concat(DISTINCT c2.role), group_concat(DISTINCT c2.pid), s.watch_count, m.mid
                           FROM movies m, casts c1, casts c2 JOIN (SELECT w.mid as movid, COUNT(DISTINCT w.cid) as watch_count
                           FROM movies m, watch w
                           WHERE m.mid = w.mid
@@ -126,10 +126,9 @@ def searchMovies():
                           AND m.mid = c2.mid
                           AND LOWER(c1.role) LIKE ?
                           GROUP BY m.title''', ('%'+keywords+'%' ,))
-        q2 = cursor.fetchall()
-        if q2[0][0] != None:
-            movie_list.extend(q2)
-        cursor.execute('''SELECT m.title, m.year, m.runtime, group_concat(DISTINCT c2.role), s.watch_count
+        movie_list.extend(cursor.fetchall())
+
+        cursor.execute('''SELECT m.title, m.year, m.runtime, group_concat(DISTINCT c2.role), group_concat(DISTINCT c2.pid), s.watch_count, m.mid
                           FROM movies m, casts c1, casts c2, moviePeople p JOIN (SELECT w.mid as movid, COUNT(DISTINCT w.cid) as watch_count
                           FROM movies m, watch w
                           WHERE m.mid = w.mid
@@ -140,14 +139,10 @@ def searchMovies():
                           AND c1.pid = p.pid 
                           AND LOWER(p.name) LIKE ?
                           GROUP BY m.title''', ('%'+keywords+'%' ,))
-        q3 = cursor.fetchall()
-        if q3[0][0] != None:
-            movie_list.extend(q3)
+        movie_list.extend(cursor.fetchall())
     
     print(movie_list)
     movie_counter = (Counter(movie_list))
-
-    print(movie_counter)
 
     count = 0
     threshold = 5
@@ -166,11 +161,46 @@ def searchMovies():
             count = 0
             threshold += 5
             print()
-        elif (int(choice) > 0 and int(choice) <= len(movie_counter)):
-            int_choice = int(choice) - 1
-            print('\n'+list(movie_counter.keys())[int_choice][0]+'. Cast:', list(movie_counter.keys())[int_choice][3],' Cast:', list(movie_counter.keys())[int_choice][4])
+        elif choice != '-' and int(choice) > 0 and int(choice) <= len(movie_counter):
+            follow_choice = ''
+
+            while follow_choice != '-':
+                int_choice = int(choice) - 1
+                movie_name = list(movie_counter.keys())[int_choice][0]
+                movie_mid = list(movie_counter.keys())[int_choice][6]
+                cast_list = list((list(movie_counter.keys())[int_choice][3]).split(","))
+                cast_pid_list = list((list(movie_counter.keys())[int_choice][4]).split(","))
+
+                print('\n'+movie_name+'\nCast:')
+                for cast_ind in range(0,len(cast_list)):
+                    print(str(cast_ind+1)+'.',cast_list[cast_ind])
+                print('# of customers who have viewed:', list(movie_counter.keys())[int_choice][5])
+
+                print("To go back type '-'.") 
+                follow_choice = input("To start watching the movie type '0' Otherwise type the number besides the cast member to follow them: ")
+
+                if follow_choice.isdigit and follow_choice != '-':
+                    if int(follow_choice) == 0:
+                        try:
+                            cursor.execute("INSERT INTO watch VALUES (?, ?, ?, ?)",(sid, cid, movie_mid, duration))
+                            connection.commit()
+                            print('\nYou are now watching', movie_name)
+                        except:
+                            print('\nYou are already watching', movie_name)
+
+                    elif int(follow_choice) > 0 and int(follow_choice) <= len(cast_list):
+                        try:
+                            cursor.execute("INSERT INTO follows VALUES (?, ?)",(cid, cast_pid_list[int(follow_choice)-1]))
+                            connection.commit()
+                            print('\nYou are now following', cast_list[int(follow_choice)-1], cast_pid_list[int(follow_choice)-1])
+                        except:
+                            print('\nYou are already following', cast_list[int(follow_choice)-1])
+                else:
+                    print("That's not an int!")
+
         elif (choice == '-'):
             break
+    connection.commit()
 
 def onExit():
     global connection, cursor
@@ -189,13 +219,16 @@ def main():
     else:
         connect(path)
 
-    signinscreen()
-    (id,roleToAccess) = signinscreen()
+    #signinscreen()
+    #(id,roleToAccess) = signinscreen()
     # RoleToAcess: 1 = customer , 2=editors, 0 = error
-    
+    id = 'c100'
+    sid = 6
+    duration = 0
+    roleToAccess = 1
     if(roleToAccess == 1):
-        startSession(id)
-        searchMovies()
+        #startSession(id)
+        searchMovies(id, sid, duration)
     elif(roleToAccess == 2):
         # do somethiong
         # place holder v
