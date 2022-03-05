@@ -92,7 +92,7 @@ def startSession(cid):
     connection.commit()
     return 
 
-def searchMovies(cid, sid, duration):
+def searchMovies(cid, sid):
     global connection, cursor
 
     keyw = input("Enter a keyword or multiple keywords seperated by a comma to begin searching for a movie: ")
@@ -182,7 +182,7 @@ def searchMovies(cid, sid, duration):
                 if follow_choice.isdigit and follow_choice != '-':
                     if int(follow_choice) == 0:
                         try:
-                            cursor.execute("INSERT INTO watch VALUES (?, ?, ?, ?)",(sid, cid, movie_mid, duration))
+                            cursor.execute("INSERT INTO watch VALUES (?, ?, ?, ?)",(sid, cid, movie_mid, 0))
                             connection.commit()
                             print('\nYou are now watching', movie_name)
                         except:
@@ -202,11 +202,57 @@ def searchMovies(cid, sid, duration):
             break
     connection.commit()
 
+def end_movie(cid, sid):
+    global connection, cursor
+
+    duration = 200
+
+    cursor.execute('''SELECT m.title, m.mid, m.runtime
+                      FROM movies m, watch w
+                      WHERE m.mid = w.mid
+                      AND w.cid = ?
+                      AND w.sid = ?
+                      AND w.duration = 0
+                   ''', (cid, sid))
+    movie_list = cursor.fetchall()
+
+    print(movie_list)
+
+    print('\n##### MOVIE MENU #####')
+    for movie_ind in range(0, len(movie_list)):
+        print(str(movie_ind+1)+'.',movie_list[movie_ind][0])
+
+    print("\nType '-' to return to the main menu")
+    movie_menu = input("Enter the number of the movie you'd like to stop watching: ")
+
+    if movie_menu == '-':
+        return
+    else:
+        movie_menu = int(movie_menu)-1
+    
+    if duration > movie_list[movie_menu][2]:
+        duration = movie_list[movie_menu][2]
+
+    cursor.execute('''UPDATE watch
+                      SET duration = ?
+                      WHERE cid = ?
+                      AND sid = ?
+                      AND mid = ?
+                      AND duration = 0
+                   ''', (69, cid, sid, movie_list[movie_menu][1]))
+    connection.commit()
+
+    print('\nYou are no longer watching', movie_list[movie_menu][0])
+    
+    return
+
+
 def onExit():
     global connection, cursor
 
     connection.commit()
     connection.close()
+    print("Goodbye!")
 
 def main():
     
@@ -224,11 +270,24 @@ def main():
     # RoleToAcess: 1 = customer , 2=editors, 0 = error
     id = 'c100'
     sid = 6
-    duration = 0
     roleToAccess = 1
     if(roleToAccess == 1):
-        #startSession(id)
-        searchMovies(id, sid, duration)
+        main_menu = ''
+        while main_menu != '-':
+            print("##### MAIN MENU #####")
+            print("1. Start a session\n2. Search for a movie\n3. End movie viewing\n4. End session")
+            print("\nType '-' to exit")
+            main_menu = input("Enter the number of the menu you'd like to access: ")
+            if main_menu == '1':
+                sid = startSession(id)
+            elif main_menu == '2':
+                if sid != 0:
+                    searchMovies(id, sid)
+                else:
+                    print('You must begin a session before searching for a movie.')
+            elif main_menu == '3':
+                end_movie(id, sid)
+
     elif(roleToAccess == 2):
         # do somethiong
         # place holder v
