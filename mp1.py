@@ -26,12 +26,16 @@ def setupDB(databaseFile):
     return
    
 def signinscreen():
-    print("1.Login\n2.Register")
-    userSignInChoice = input()
+    print("\n##### STARTUP MENU #####")
+    print("1. Login\n2. Register")
+    print("\nType the number besides the option to select. Type '-' to exit.")
+    userSignInChoice = input("Enter your selection: ")
+
     # Handle singin in
     if userSignInChoice == "1":
         # While loop to keep looping until correct user and password entered
         while True:
+            print("\n##### LOGIN MENU #####")
             signInUserName = input("Enter Id: ")
             signInPassword = input("Enter password: ")
             signInResult = attemptSignIn(signInUserName, signInPassword)
@@ -41,7 +45,7 @@ def signinscreen():
             elif signInResult == 2:
                 return (signInUserName,2)
             elif signInResult == 0:
-                print("Incorrect information, please try again! ")
+                print("\n*Incorrect information, please try again!*")
     elif userSignInChoice == "2":
         return (signUpNewUser(),1)
 
@@ -62,6 +66,8 @@ def attemptSignIn(user, pwd):
 
 def signUpNewUser():
     global connection, cursor
+
+    print("\n##### REGISTRATION MENU #####")
     newUserName = input("Enter your name: ")
     newUserID = input("Enter your desired ID: ")
     newUserPassword = input("Enter desired password: ")
@@ -72,6 +78,14 @@ def signUpNewUser():
 def startSession(cid):
     global connection, cursor
     
+    print('\n##### SESSION CREATION MENU #####')
+    print('1. Create new session')
+    print("\nType the number besides the option to select. Type '-' to return to the main menu.")
+    ses_crt_menu = input("Enter your selection: ")
+
+    if ses_crt_menu == '-':
+        return
+
     cursor.execute("SELECT sid FROM sessions")
     row = cursor.fetchall()
     sid = random.randint(0,9999)
@@ -90,7 +104,10 @@ def startSession(cid):
     duration = NULL
     cursor.execute("INSERT INTO sessions VALUES (?, ?, ?, ?)",(sid,cid,sdate,duration))
     connection.commit()
-    return 
+
+    print('\nSession successfully created')
+
+    return sid
 
 def searchMovies(cid, sid):
     global connection, cursor
@@ -202,10 +219,8 @@ def searchMovies(cid, sid):
             break
     connection.commit()
 
-def end_movie(cid, sid):
+def watching_movie_list(cid, sid):
     global connection, cursor
-
-    duration = 200
 
     cursor.execute('''SELECT m.title, m.mid, m.runtime
                       FROM movies m, watch w
@@ -214,13 +229,40 @@ def end_movie(cid, sid):
                       AND w.sid = ?
                       AND w.duration = 0
                    ''', (cid, sid))
-    movie_list = cursor.fetchall()
+    connection.commit()
 
-    print(movie_list)
+    return cursor.fetchall()
+
+def end_this_movie(duration, runtime, cid, sid, mid):
+    global connection, cursor
+
+    if duration > runtime:
+        duration = runtime
+
+    cursor.execute('''UPDATE watch
+                      SET duration = ?
+                      WHERE cid = ?
+                      AND sid = ?
+                      AND mid = ?
+                      AND duration = 0
+                   ''', (duration, cid, sid, mid))
+    connection.commit()
+
+    return
+
+def end_movie(cid, sid):
+    global connection, cursor
+
+    duration = 200
+
+    movie_list = watching_movie_list(cid, sid)
 
     print('\n##### MOVIE MENU #####')
     for movie_ind in range(0, len(movie_list)):
         print(str(movie_ind+1)+'.',movie_list[movie_ind][0])
+    
+    if len(movie_list) == 0:
+        print('*You are not watching any movies*')
 
     print("\nType '-' to return to the main menu")
     movie_menu = input("Enter the number of the movie you'd like to stop watching: ")
@@ -229,20 +271,41 @@ def end_movie(cid, sid):
         return
     else:
         movie_menu = int(movie_menu)-1
-    
-    if duration > movie_list[movie_menu][2]:
-        duration = movie_list[movie_menu][2]
 
-    cursor.execute('''UPDATE watch
+    end_this_movie(duration, movie_list[movie_menu][2], cid, sid, movie_list[movie_menu][1])
+
+    print('\nYou are no longer watching', movie_list[movie_menu][0])
+    
+    return
+
+def end_session(cid, sid):
+    global connection, cursor
+
+    movie_list = watching_movie_list(cid, sid)
+
+    print('\n##### SESSION DELETION MENU #####')
+    print('1. Delete current session')
+    print("\nType '-' to return to the main menu. Type the number besides the option to select")
+    ses_dlt_menu = input("Enter your selection: ")
+
+    if ses_dlt_menu == '-':
+        return
+
+    duration = 69
+    
+    for movie_ind in range(0, len(movie_list)):
+        print('Deleting:',movie_list[movie_ind][0])
+        end_this_movie(duration, movie_list[movie_ind][2], cid, sid, movie_list[movie_ind][1])
+
+    cursor.execute('''UPDATE sessions
                       SET duration = ?
                       WHERE cid = ?
                       AND sid = ?
-                      AND mid = ?
                       AND duration = 0
-                   ''', (69, cid, sid, movie_list[movie_menu][1]))
+                   ''', (duration, cid, sid))
     connection.commit()
 
-    print('\nYou are no longer watching', movie_list[movie_menu][0])
+    print('\nThe session has been successfully deleted')
     
     return
 
@@ -265,16 +328,13 @@ def main():
     else:
         connect(path)
 
-    #signinscreen()
-    #(id,roleToAccess) = signinscreen()
+    (id,roleToAccess) = signinscreen()
     # RoleToAcess: 1 = customer , 2=editors, 0 = error
-    id = 'c100'
-    sid = 6
-    roleToAccess = 1
+
     if(roleToAccess == 1):
         main_menu = ''
         while main_menu != '-':
-            print("##### MAIN MENU #####")
+            print("\n##### MAIN MENU #####")
             print("1. Start a session\n2. Search for a movie\n3. End movie viewing\n4. End session")
             print("\nType '-' to exit")
             main_menu = input("Enter the number of the menu you'd like to access: ")
@@ -287,6 +347,8 @@ def main():
                     print('You must begin a session before searching for a movie.')
             elif main_menu == '3':
                 end_movie(id, sid)
+            elif main_menu == '4':
+                end_session(id, sid)
 
     elif(roleToAccess == 2):
         # do somethiong
