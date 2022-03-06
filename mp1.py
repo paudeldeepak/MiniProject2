@@ -7,6 +7,7 @@ import os.path
 from tkinter import E
 from unittest.mock import NonCallableMagicMock
 from collections import Counter
+from getpass import getpass
 
 def connect(path):
     global connection, cursor
@@ -37,7 +38,7 @@ def signinscreen():
         while True:
             print("\n##### LOGIN MENU #####")
             signInUserName = input("Enter Id: ")
-            signInPassword = input("Enter password: ")
+            signInPassword = getpass("Enter password: ")
             signInResult = attemptSignIn(signInUserName, signInPassword)
             # Return 1 = customer , 2=editors, 0 = error
             if signInResult == 1:
